@@ -48,7 +48,7 @@ def on_close(ws: Any, close_status_code: int, close_msg: str) -> None:
 def on_open(ws: Any) -> None:
     # 连接建立后发送登录命令
     def run():
-        ws.send("login_lnt")
+        ws.send("login_lnt_qr")
 
     threading.Thread(target=run).start()
 

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/websocket"
 	"github.com/vintcessun/XMU-Service/api"
@@ -43,9 +44,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("收到消息: %s", msg)
 		switch msgType {
 		case websocket.TextMessage:
-			msgStr := string(msg)
-			switch msgStr {
-			case "login_lnt":
+			msgs := strings.Split(string(msg), " ")
+			switch msgs[0] {
+			case "login_lnt_qr":
 				go func() {
 					lntClient := api.LntServiceQr{}
 					err := lntClient.GetInfo()
@@ -81,6 +82,20 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 
+					easySendMessage(conn, "Session "+lntClient.Session)
+				}()
+			case "login_lnt_password":
+				go func() {
+					if len(msgs) != 3 {
+						easySendMessage(conn, "Error 参数错误")
+						return
+					}
+					lntClient := api.LntServicePassword{Username: msgs[1], Password: msgs[2]}
+					err := lntClient.Login()
+					if err != nil {
+						easySendMessage(conn, "Error "+err.Error())
+						return
+					}
 					easySendMessage(conn, "Session "+lntClient.Session)
 				}()
 			case "ping":
