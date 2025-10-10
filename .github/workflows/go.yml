@@ -1,70 +1,60 @@
 name: Go Multi-Platform Build
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    push:
+        branches: ["master"]
+    pull_request:
+        branches: ["master"]
 
 jobs:
-  # 单独的测试任务（只运行一次，避免重复测试）
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.23'
+            - name: Set up Go
+              uses: actions/setup-go@v4
+              with:
+                  go-version: "1.25" # 升级为1.25版本
 
-      - name: Test
-        run: go test -v ./...
+            - name: Test
+              run: go test -v ./...
 
-  # 多平台编译任务（通过矩阵策略生成不同平台的组合）
-  build:
-    needs: test  # 依赖test任务，确保测试通过后再编译
-    runs-on: ubuntu-latest  # 用Ubuntu即可交叉编译其他平台，无需目标系统环境
-    strategy:
-      # 定义需要编译的目标平台组合（GOOS=系统，GOARCH=架构）
-      matrix:
-        goos: [linux, windows, darwin]  # 支持的系统：Linux、Windows、macOS
-        goarch: [amd64, arm64]          # 支持的架构：x86_64、arm64
-        # 可选：排除不支持的组合（例如某些系统+架构不兼容）
-        # exclude:
-        #   - goos: darwin
-        #     goarch: 386  # macOS已不支持32位
+    build:
+        needs: test
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                goos: [linux, windows, darwin]
+                goarch: [amd64, arm64]
 
-    steps:
-      - uses: actions/checkout@v4
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.23'
+            - name: Set up Go
+              uses: actions/setup-go@v4
+              with:
+                  go-version: "1.25" # 升级为1.25版本
 
-      - name: Create output directory
-        run: mkdir -p dist  # 创建存放编译产物的目录
+            - name: Create output directory
+              run: mkdir -p dist
 
-      - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
-        env:
-          # 设置交叉编译的环境变量
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 0  # 禁用CGO（交叉编译时推荐，避免依赖目标系统库）
-        run: |
-          # 根据系统设置输出文件名（Windows需要.exe后缀）
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
-          else
-            output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}"
-          fi
-          # 编译并输出到指定文件
-          go build -v -o "$output" ./...
+            - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
+              env:
+                  GOOS: ${{ matrix.goos }}
+                  GOARCH: ${{ matrix.goarch }}
+                  CGO_ENABLED: 0
+              run: |
+                  if [ "${{ matrix.goos }}" = "windows" ]; then
+                    output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
+                  else
+                    output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}"
+                  fi
+                  go build -v -o "$output" ./...
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v3
-        with:
-          # 每个平台的产物单独命名，方便区分
-          name: myapp-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/  # 上传编译好的文件
+            - name: Upload build artifact
+              uses: actions/upload-artifact@v4 # 升级为v4版本（避免弃用）
+              with:
+                  name: myapp-${{ matrix.goos }}-${{ matrix.goarch }}
+                  path: dist/
+                  retention-days: 5 # 可选：设置产物保留天数（v4支持的新参数，按需调整）
