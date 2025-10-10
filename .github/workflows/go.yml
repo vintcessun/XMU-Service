@@ -26,7 +26,7 @@ jobs:
         strategy:
             matrix:
                 goos: [linux, windows, darwin]
-                goarch: [386, amd64, arm64] # 包含Intel x86（386）和x86_64（amd64）
+                goarch: [386, amd64, arm64]
                 exclude:
                     - goos: darwin
                       goarch: 386 # macOS不支持32位
@@ -48,18 +48,21 @@ jobs:
                   GOARCH: ${{ matrix.goarch }}
                   CGO_ENABLED: 0
               run: |
-                  # 和本地编译逻辑一致：根目录生成对应平台的可执行文件
                   if [ "${{ matrix.goos }}" = "windows" ]; then
                     output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
                   else
                     output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}"
                   fi
-                  # 关键：用.表示根目录的main包，和你本地`go build`命令一致
-                  go build -v -o "$output" ./...
+                  echo "Building to $output"
+                  # 只构建主程序（假设 main.go 在仓库根目录）
+                  go build -v -o "$output" .
+
+                  # 保存输出路径到环境变量（供 upload-artifact 使用）
+                  echo "output=$output" >> $GITHUB_ENV
 
             - name: Upload build artifact
               uses: actions/upload-artifact@v4
               with:
-                  name: myapp-${{ matrix.goos }}-${{ matrix.goarch }}
-                  path: ${{ env.output }} # 直接上传生成的单个文件，更精准
+                  name: XMU-Service-${{ matrix.goos }}-${{ matrix.goarch }}
+                  path: ${{ env.output }}
                   retention-days: 5
