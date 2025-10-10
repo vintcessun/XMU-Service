@@ -1,60 +1,66 @@
 name: Go Multi-Platform Build
 
 on:
-    push:
-        branches: ["master"]
-    pull_request:
-        branches: ["master"]
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
 jobs:
-    test:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Set up Go
-              uses: actions/setup-go@v4
-              with:
-                  go-version: "1.25" # 升级为1.25版本
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
 
-            - name: Test
-              run: go test -v ./...
+      - name: Test
+        run: go test -v ./...  # 测试可以用./...（测试所有包）
 
-    build:
-        needs: test
-        runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                goos: [linux, windows, darwin]
-                goarch: [amd64, arm64]
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [386, amd64, arm64]  # 新增386（Intel x86 32位）支持
+        # 排除不支持的组合（例如macOS 32位早已废弃）
+        exclude:
+          - goos: darwin
+            goarch: 386
 
-        steps:
-            - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Set up Go
-              uses: actions/setup-go@v4
-              with:
-                  go-version: "1.25" # 升级为1.25版本
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25'
 
-            - name: Create output directory
-              run: mkdir -p dist
+      - name: Create output directory
+        run: mkdir -p dist
 
-            - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
-              env:
-                  GOOS: ${{ matrix.goos }}
-                  GOARCH: ${{ matrix.goarch }}
-                  CGO_ENABLED: 0
-              run: |
-                  if [ "${{ matrix.goos }}" = "windows" ]; then
-                    output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
-                  else
-                    output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}"
-                  fi
-                  go build -v -o "$output" ./...
+      - name: Build for ${{ matrix.goos }}-${{ matrix.goarch }}
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          # 根据系统设置输出文件名
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
+          else
+            output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}"
+          fi
+          # 关键修改：编译主包（替换为你的主包路径，这里假设是根目录的main包）
+          go build -v -o "$output" .  # 用.表示当前目录的主包（替换为实际主包路径，如./cmd/app）
 
-            - name: Upload build artifact
-              uses: actions/upload-artifact@v4 # 升级为v4版本（避免弃用）
-              with:
-                  name: myapp-${{ matrix.goos }}-${{ matrix.goarch }}
-                  path: dist/
-                  retention-days: 5 # 可选：设置产物保留天数（v4支持的新参数，按需调整）
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: myapp-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ matrix.goos == 'windows' ? 'dist/*.exe' : 'dist/*' }}  # 精确匹配产物
+          retention-days: 5
