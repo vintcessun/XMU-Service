@@ -49,9 +49,9 @@ jobs:
                   CGO_ENABLED: 0
               run: |
                   if [ "${{ matrix.goos }}" = "windows" ]; then
-                    output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
+                    output="dist/XMU-Service-${{ matrix.goos }}-${{ matrix.goarch }}.exe"
                   else
-                    output="dist/myapp-${{ matrix.goos }}-${{ matrix.goarch }}"
+                    output="dist/XMU-Service-${{ matrix.goos }}-${{ matrix.goarch }}"
                   fi
                   echo "Building to $output"
                   # 只构建主程序（假设 main.go 在仓库根目录）
