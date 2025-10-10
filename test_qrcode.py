@@ -35,6 +35,9 @@ def on_message(ws: Any, message: str) -> None:
             print(f"获取二维码失败: {resp.status_code}")
     elif prefix == "Error":
         print("错误:", content)
+    elif prefix == "Session":
+        print("登录成功，Session:", content)
+        ws.close()
 
 
 def on_error(ws: Any, error: Any) -> None:

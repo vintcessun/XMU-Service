@@ -90,7 +90,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 						easySendMessage(conn, "Error 参数错误")
 						return
 					}
-					lntClient := api.LntServicePassword{Username: msgs[1], Password: msgs[2]}
+					lntClient := api.LntServicePassword{Username: strings.TrimSpace(msgs[1]), Password: strings.TrimSpace(msgs[2])}
 					err := lntClient.Login()
 					if err != nil {
 						easySendMessage(conn, "Error "+err.Error())

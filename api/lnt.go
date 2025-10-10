@@ -37,7 +37,7 @@ type LntServiceQr struct {
 }
 
 func getClient(loginType string) (*utils.ServiceClient, error) {
-	ua := utils.GetFakeUA()
+	ua := utils.GetFakeUAComputer()
 	client := resty.New()
 	client.SetHeader("User-Agent", ua)
 	client.SetRedirectPolicy(resty.FlexibleRedirectPolicy(100))
@@ -194,7 +194,14 @@ func (l *LntServicePassword) Login() error {
 			return fmt.Errorf("LoginNeedCaptcha")
 		}
 
-		executions := executionRegex.FindStringSubmatch(l.client.Html)
+		index := strings.Index(l.client.Html, "pwdLoginDiv")
+		if index == -1 {
+			continue
+		}
+
+		pwdHtml := l.client.Html[index:]
+
+		executions := executionRegex.FindStringSubmatch(pwdHtml)
 
 		if len(executions) <= 1 {
 			continue
@@ -202,7 +209,7 @@ func (l *LntServicePassword) Login() error {
 
 		l.execution = executions[1]
 
-		salts := saltRegex.FindStringSubmatch(l.client.Html)
+		salts := saltRegex.FindStringSubmatch(pwdHtml)
 		if len(salts) <= 1 {
 			continue
 		}
@@ -230,7 +237,10 @@ func (l *LntServicePassword) Login() error {
 			"execution": l.execution,
 		}
 
-		l.client.Client.R().SetBody(postData).Post(fmt.Sprintf("https://ids.xmu.edu.cn/authserver/login?type=userNameLogin&service=%s", l.client.Service))
+		_, err = l.client.Client.R().SetFormData(postData).Post(fmt.Sprintf("https://ids.xmu.edu.cn/authserver/login?service=%s", l.client.Service))
+		if err != nil {
+			continue
+		}
 
 		sessionCookie, ok := utils.GetSessionCookie(l.client.Client.GetClient().Jar.Cookies(lntURLParsed), "session")
 		if !ok {

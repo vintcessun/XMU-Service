@@ -6,8 +6,8 @@ from typing import Any
 WS_URL = "ws://localhost:8081/ws"
 
 # 替换成实际账号和密码
-USERNAME = input("请输入用户名: ")
-PASSWORD = input("请输入密码: ")
+USERNAME = input("请输入用户名: ").strip()
+PASSWORD = input("请输入密码: ").strip()
 
 
 def on_message(ws: Any, message: str) -> None:
@@ -20,6 +20,7 @@ def on_message(ws: Any, message: str) -> None:
 
     if prefix == "Session":
         print("登录成功，Session:", content)
+        ws.close()
     elif prefix == "Error":
         print("错误:", content)
 
