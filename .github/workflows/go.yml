@@ -65,4 +65,6 @@ jobs:
               with:
                   name: XMU-Service-${{ matrix.goos }}-${{ matrix.goarch }}
                   path: ${{ env.output }}
+              env:
+                  output: ${{ env.output }}
                   retention-days: 5
