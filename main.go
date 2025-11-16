@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/vintcessun/XMU-Service/api"
+	"github.com/vintcessun/XMU-Service/utils"
 )
 
 var upgrader = websocket.Upgrader{
@@ -100,6 +101,25 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				}()
 			case "ping":
 				easySendMessage(conn, "pong")
+			case "profile":
+				go func() {
+					if len(msgs) != 2 {
+						easySendMessage(conn, "Error 参数错误")
+						return
+					}
+					session := strings.TrimSpace(msgs[1])
+					result, err := api.GetProfile(session)
+					if err != nil {
+						easySendMessage(conn, "Error "+err.Error())
+						return
+					}
+					data, err := utils.MarshalJSON[*api.ProfileResponse](result)
+					if err != nil {
+						easySendMessage(conn, "Error "+err.Error())
+						return
+					}
+					easySendMessage(conn, "Profile "+data)
+				}()
 			}
 		case websocket.BinaryMessage:
 			easySendMessage(conn, "The command is not allowed")

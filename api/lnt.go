@@ -162,6 +162,95 @@ type ApiLoginChechIfNeedCaptcha struct {
 
 const aesChars = "ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678"
 
+type ProfileResponse struct {
+	Username         string `json:"username"`
+	Password         string `json:"password"`
+	Name             string `json:"name"`
+	Avatar           string `json:"avatar"`
+	Job              string `json:"job"`
+	Organization     string `json:"organization"`
+	Location         string `json:"location"`
+	Email            string `json:"email"`
+	Introduction     string `json:"introduction"`
+	PersonalWebsite  string `json:"personalWebsite"`
+	JobName          string `json:"jobName"`
+	OrganizationName string `json:"organizationName"`
+	LocationName     string `json:"locationName"`
+	Phone            string `json:"phone"`
+	RegistrationDate string `json:"registrationDate"`
+	AccountId        string `json:"accountId"`
+	Certification    int    `json:"certification"`
+	Role             string `json:"role"`
+	UpdateTime       string `json:"updateTime"`
+}
+
+func GetProfile(session string) (*ProfileResponse, error) {
+	client := resty.New()
+	client.SetHeader("User-Agent", utils.GetFakeUAComputer())
+	client.SetHeader("Cookie", fmt.Sprintf("session=%s", session))
+
+	resp, err := client.R().Get("https://lnt.xmu.edu.cn/api/profile")
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := utils.UnmarshalJSON[map[string]interface{}](resp.Body())
+	if err != nil {
+		return nil, err
+	}
+
+	apiData := *data
+
+	createdBy := apiData["created_by"].(map[string]interface{})
+
+	avatar := fmt.Sprintf("%v", createdBy["avatar_small_url"])
+
+	org := apiData["org"].(map[string]interface{})
+
+	userNo := fmt.Sprintf("%v", apiData["user_no"])
+	name := fmt.Sprintf("%v", apiData["name"])
+	role := fmt.Sprintf("%v", apiData["role"])
+	deliveryOrg := fmt.Sprintf("%v", org["delivery_org"])
+
+	var email string
+	if apiData["email"] == nil {
+		email = ""
+	} else {
+		email = fmt.Sprintf("%v", apiData["email"])
+	}
+	createdAt := fmt.Sprintf("%v", apiData["created_at"])
+	updatedAt := fmt.Sprintf("%v", apiData["updated_at"])
+
+	password := randomString(16)
+
+	roleMapped := "reviewer"
+	if role == "Student" {
+		roleMapped = "user"
+	}
+
+	return &ProfileResponse{
+		Username:         userNo,
+		Password:         password,
+		Name:             name,
+		Avatar:           avatar,
+		Job:              role,
+		Organization:     deliveryOrg,
+		Location:         "",
+		Email:            email,
+		Introduction:     "",
+		PersonalWebsite:  "",
+		JobName:          role,
+		OrganizationName: deliveryOrg,
+		LocationName:     "",
+		Phone:            "",
+		RegistrationDate: createdAt,
+		AccountId:        userNo,
+		Certification:    1,
+		Role:             roleMapped,
+		UpdateTime:       updatedAt,
+	}, nil
+}
+
 func randomString(length int) string {
 	src := rand.NewSource(time.Now().UnixNano())
 	r := rand.New(src)
