@@ -159,5 +159,38 @@ def run_qrcode_login_and_test_profile() -> None:
     ws.run_forever()  # type: ignore
 
 
+def test_qrcode_expired() -> None:
+    """测试二维码过期的响应"""
+
+    def on_message(ws: Any, message: str) -> None:
+        if " " in message:
+            prefix, content = message.split(" ", 1)
+        else:
+            prefix, content = message, ""
+        if prefix == "QrCodeId":
+            # 二维码生成但不扫描，等待过期
+            print("生成二维码，等待过期测试:", content.strip())
+        elif prefix == "Error":
+            print("错误:", content)
+            ws.close()
+        elif prefix == "Session":
+            print("错误: 二维码不应在过期测试中成功登录")
+            ws.close()
+
+    def on_open(ws: Any) -> None:
+        ws.send("login_lnt_qr")
+
+    ws_app = websocket.WebSocketApp(
+        WS_URL,
+        on_open=on_open,
+        on_message=on_message,
+        on_error=on_error,
+        on_close=on_close,
+    )
+    ws_app.run_forever()  # type: ignore
+
+
 if __name__ == "__main__":
     run_qrcode_login_and_test_profile()
+    print("\n--- 开始测试二维码过期场景 ---")
+    test_qrcode_expired()
