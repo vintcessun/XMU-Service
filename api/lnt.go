@@ -36,7 +36,7 @@ type LntServiceQr struct {
 	execution string
 }
 
-func getClient(loginType string) (*utils.ServiceClient, error) {
+func getClientLnt(loginType string) (*utils.ServiceClient, error) {
 	ua := utils.GetFakeUAComputer()
 	client := resty.New()
 	client.SetHeader("User-Agent", ua)
@@ -67,7 +67,7 @@ func getClient(loginType string) (*utils.ServiceClient, error) {
 }
 
 func (l *LntServiceQr) GetInfo() error {
-	client, err := getClient("qrLogin")
+	client, err := getClientLnt("qrLogin")
 	if err != nil {
 		return err
 	}
@@ -265,7 +265,7 @@ func randomString(length int) string {
 }
 
 func (l *LntServicePassword) Login() error {
-	client, err := getClient("userNameLogin")
+	client, err := getClientLnt("userNameLogin")
 	if err != nil {
 		return err
 	}

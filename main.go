@@ -101,7 +101,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				}()
 			case "ping":
 				easySendMessage(conn, "pong")
-			case "profile":
+			case "profile_lnt":
 				go func() {
 					if len(msgs) != 2 {
 						easySendMessage(conn, "Error 参数错误")
@@ -119,6 +119,43 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					easySendMessage(conn, "Profile "+data)
+				}()
+			case "login_zyh365":
+				go func() {
+					if len(msgs) != 3 {
+						easySendMessage(conn, "Error 参数错误")
+						return
+					}
+					username := strings.TrimSpace(msgs[1])
+					password := strings.TrimSpace(msgs[2])
+					zyh365Client := api.Zyh365ServicePassword{Username: username, Password: password}
+					err := zyh365Client.Login()
+					if err != nil {
+						easySendMessage(conn, "Error "+err.Error())
+						return
+					}
+					easySendMessage(conn, "Token "+zyh365Client.Token)
+				}()
+			case "hours_zyh365":
+				go func() {
+					if len(msgs) != 3 {
+						easySendMessage(conn, "Error 参数错误")
+						return
+					}
+					Token := strings.TrimSpace(msgs[1])
+					userName := strings.TrimSpace(msgs[2])
+					service := api.Zyh365ServiceHours{}
+					err := service.GetHours(Token, userName)
+					if err != nil {
+						easySendMessage(conn, "Error "+err.Error())
+						return
+					}
+					data, err := utils.MarshalJSON[*api.Zyh365ServiceHours](&service)
+					if err != nil {
+						easySendMessage(conn, "Error "+err.Error())
+						return
+					}
+					easySendMessage(conn, "Hours "+data)
 				}()
 			}
 		case websocket.BinaryMessage:
